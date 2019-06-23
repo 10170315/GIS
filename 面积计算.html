@@ -1,0 +1,346 @@
+﻿<html>  
+    <head>  
+        <title>面积计算</title>  
+    </head>
+	<style>
+		.tab{
+			position:absolute;
+			left:1000px;
+			top:150px;
+		}
+        .btn {
+            margin-left: 20px;
+            margin-top: 10px;
+            border-color: grey;
+            border-radius: 3px;
+            background-color: white;
+            width: 100px;
+            height: 30px;
+            font-size: 13px;
+        }
+    </style>
+	<header>
+		<h1>江苏省地市面积计算</h1>
+	</header>
+    <body>
+		<input id="fileInput" type="file" onchange="processFiles(fileInput)"/>
+		<select style="height:23px;" id="geoType">
+			<option value="mecator">墨卡托投影</option>
+            <option value="geography">地理坐标系</option>
+        </select>
+		<button class="btn" onclick="clearCanvas();drawMap(x,y);">显示地图</button>
+		<button class="btn" onclick="clearCanvas();">清空地图</button>
+		<button class="btn" onclick="areaRrsult();">计算面积</button>
+		<br>
+		<canvas id="map" width="900" height="600" style="position:absolute;top:150px;border:2px solid #c3c3c3">your browser does not support the canvas tag </canvas>
+		<table class="tab" border="1">
+			<tr>
+				<th>地级市</th>
+				<th>面积</th>
+			</tr>
+			<tr>
+				<td>连云港</td>
+				<td>
+					<p id="s1"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>徐州</td>
+				<td>
+					<p id="s2"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>宿迁</td>
+				<td>
+					<p id="s3"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>盐城</td>
+				<td>
+					<p id="s4"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>淮安</td>
+				<td>
+					<p id="s5"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>泰州</td>
+				<td>
+					<p id="s6"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>南通</td>
+				<td>
+					<p id="s7"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>扬州</td>
+				<td>
+					<p id="s8"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>南京</td>
+				<td>
+					<p id="s9"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>镇江</td>
+				<td>
+					<p id="s10"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>常州</td>
+				<td>
+					<p id="s11"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>无锡</td>
+				<td>
+					<p id="s12"></p>
+				</td>
+			</tr>
+			<tr>
+				<td>苏州</td>
+				<td>
+					<p id="s13"></p>
+				</td>
+			</tr>
+		</table>
+         <script>
+		  
+		  	var canvas = document.getElementById('map');//获取画布元素
+            var cxt = canvas.getContext('2d');//2D形式绘画
+			
+			var number=new Array;//提取数字数组
+			var x = new Array;//坐标
+			var y = new Array;
+			var s = new Array;//面积
+			
+			var a = 6378245;//椭球体参数
+			var b = 6356863.0187730473;
+			var e2 = 0.006693421622966;
+			var e = Math.sqrt(e2);
+			
+			function processFiles(fileid){
+			    var file=document.getElementById("fileInput").files[0];
+                var reader=new FileReader();
+					
+                reader.readAsText(file);
+                reader.onload=function(e)
+                {
+                    var str = this.result;
+                    number = digitalExtraction(str,number);
+                    transXY(number);	
+                }
+			}
+			
+			function digitalExtraction(str,number){
+				var heap=str;
+                var numcharacter="";//存储数字字符
+                var i=0;
+                var flag=0;//heap字符串当前标记
+                var character=heap[flag];//获取字符串的一个字符
+				//逐字符读取字符串heap,并将数字以数的形式存储至number中，每一个线段用-1隔开，主要过滤掉回车符、"end"、","和"L"，并将字符转化为数字
+                while (character != null) {
+                if (character == "E") {
+                 	flag += 5;
+                 	character = heap[flag];
+                } else {
+                while (character != "\n") {
+                 	character = heap[++flag];
+                 	}
+                 	character = heap[++flag];
+                while (character != "E" && character != "e") {
+                 	while (character != ",") {
+                 			numcharacter += character;
+                 			character = heap[++flag];
+							}
+                 		character = heap[++flag];
+                 		number[i++] = parseFloat(numcharacter);
+                 		numcharacter = "";
+                 	while (character != "\n") {
+                 			numcharacter += character;
+                 			character = heap[++flag];
+							}
+                 			character = heap[++flag];
+                 			number[i++] = parseFloat(numcharacter);
+                 			numcharacter = "";
+						}	
+                 	number[i++] = -1;
+                 	flag += 5;
+                 	character = heap[flag];
+                 	}
+                }
+				return number;
+			}
+			
+			function transXY(number){//将X、Y坐标分开
+				var m=0;
+				var n= number.length;
+				number[n]=-1;
+				var n= number.length;
+				for(var t=0;t<n;t++){
+					if(number[t]==-1){
+						m++;
+					}
+				}
+				
+				var h=0;
+				for(var i=0;i<m-1;i++){
+					x[i]=new Array;
+					y[i]=new Array;
+					for(var k=h,j=0;k<n;k++){
+						if(j!=-1){
+							if(number[k]!=-1){
+								x[i][j]=number[k];
+								y[i][j]=number[++k];
+								j++;
+							}else{
+								h+=(2*j+1);
+								j=-1;
+							}	
+						}else{
+							break;
+						}
+					}
+				}
+				return x,y;
+			}
+			
+			function toGeoX(y){
+				var K = Math.cos(0)*(a*a/b)/Math.sqrt(1+e2*Math.cos(0)*Math.cos(0));
+				var B=0;//迭代初始值
+				var times=40;//迭代次数
+				for(var i=0;i<times;i++){
+					B=Math.PI/2-2*Math.atan(Math.exp(-y/K)*Math.exp((e/2)*Math.log(1-e*Math.sin(B)/(1+e*Math.sin(B)))));
+				}
+				return B/Math.PI*180;
+			}
+			function toGeoY(x){
+				var K = Math.cos(0)*(a*a/b)/Math.sqrt(1+e2*Math.cos(0)*Math.cos(0));
+				return (x/K+0)/Math.PI*180;
+			}
+			
+			function clearCanvas(){
+				canvas.height=canvas.height;
+			} 
+			
+			function mecatorMap(x,y){
+				var longmax = 13574614.85;
+				var longmin = 12952537.5;
+				var latmax = 4156216.543;
+				var latmin = 3579743.802;
+				var scale = 600 / Math.max(latmax - latmin, longmax - longmin);
+				var xoff = longmin;
+				var yoff = latmax;
+				for(var i=0;i<x.length;i++){
+					cxt.moveTo(scale*(x[i][0]-xoff)+150,scale*(yoff-y[i][0])+20);
+					for(var j=1;j<x[i].length;j++){
+						cxt.lineTo(scale*(x[i][j]-xoff)+150,scale*(yoff-y[i][j])+20);
+					}
+					cxt.stroke();
+				}
+			}
+			
+			function geographyMap(x,y){
+				for(var i=0;i<x.length;i++){
+					cxt.moveTo((toGeoY(x[i][0])-118)*100+300,600-(toGeoX(y[i][0])-30)*100);
+					for(var j=1;j<x[i].length;j++){
+						cxt.lineTo((toGeoY(x[i][j])-118)*100+300,600-(toGeoX(y[i][j])-30)*100);
+					}
+					cxt.stroke();
+				}
+			}
+			
+			function mecatorArea(x,y){
+				for(var i=0;i<x.length;i++){
+					s[i]=0;
+					for(var j=0;j<x[i].length-1;j++){
+						s[i]+=(x[i][j]+x[i][j+1])*(y[i][j+1]-y[i][j]);
+					}
+					s[i]=Math.abs(s[i])/2;
+				}
+				return s;
+			}
+			
+			function geographyArea(x,y){
+				var T = new Array;//面积
+				var _x = new Array;
+				var _y = new Array;
+				var A = 1 + 1 / 2 * e2 + 3 / 8 * e2 * e2 + 5 / 16 * e2 * e2 * e2;
+                var B = 1 / 6 * e2 + 3 / 16 * e2 * e2 + 3 / 16 * e2 * e2 * e2;
+                var C = 3 / 80 * e2 * e2 + 1 / 16 * e2 * e2 * e2;
+                var D = 1 / 112 * e2 * e2 * e2;
+				for(var i=0;i<x.length;i++){
+					_x[i]=new Array;
+					_y[i]=new Array;
+					for(var j=0;j<x[i].length;j++){
+						_x[i][j]=toGeoY(x[i][j]);
+						_y[i][j]=toGeoX(y[i][j]);
+					}
+				}
+				
+				for(var i=0;i<_x.length;i++){
+					T[i]=0;
+					for(var j=0;j<_x[i].length-1;j++){
+						var L1=_x[i][j]*Math.PI/180,L2=_x[i][j+1]*Math.PI/180;
+						var B1=_y[i][j]*Math.PI/180,B2=_y[i][j+1]*Math.PI/180;
+						var K=2*a*a*(1-e2)*(L2-L1);
+						var deltaB=B2-B1;
+						var Bm=(B1+B2)/2;
+						T[i]+=K*(A*Math.sin(deltaB/2)*Math.cos(Bm)-B*Math.sin(3*deltaB/2)*Math.cos(3*Bm)+C*Math.sin(5*deltaB/2)*Math.cos(5*Bm)-D*Math.sin(7*deltaB/2)*Math.cos(7*Bm));
+					}
+					T[i]=Math.abs(T[i]);
+				}
+				return T;
+			}
+			
+			function drawMap(){
+				var type=document.getElementById('geoType').value;
+				if(type == "mecator"){
+					mecatorMap(x,y);
+				}
+				if(type == "geography"){
+					geographyMap(x,y);
+				}
+			}
+			
+			function areaRrsult(){
+				var S = new Array;
+				var type=document.getElementById('geoType').value;
+				if(type == "mecator"){
+					S=mecatorArea(x,y);
+					
+				}
+				if(type == "geography"){
+					S=geographyArea(x,y);
+					
+				}
+				document.getElementById("s1").innerHTML=S[0];
+				document.getElementById("s2").innerHTML=S[1]+S[2]+S[3]+S[4]+S[5]+S[6];
+				document.getElementById("s3").innerHTML=S[7];
+				document.getElementById("s4").innerHTML=S[8];
+				document.getElementById("s5").innerHTML=S[9];
+				document.getElementById("s6").innerHTML=S[10];
+				document.getElementById("s7").innerHTML=S[11];
+				document.getElementById("s8").innerHTML=S[12];
+				document.getElementById("s9").innerHTML=S[13];
+				document.getElementById("s10").innerHTML=S[14];
+				document.getElementById("s11").innerHTML=S[15];
+				document.getElementById("s12").innerHTML=S[16];
+				document.getElementById("s13").innerHTML=S[17];
+			}
+        </script>   
+    </body>  
+</html> 
