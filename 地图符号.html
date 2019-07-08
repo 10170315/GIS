@@ -63,7 +63,7 @@
         function clearcanvas() {
             ctext.clearRect(0, 0, canvas.width, canvas.height);
         }
-        //其余
+        
         function drawVegrgn(aim) {
             var dis = 3;
             var xmax = 0, xmin = 999999999, ymax = 0, ymin = 999999999;
@@ -188,7 +188,7 @@
                 }
             }
             var linenum = Math.floor((xmax - xmin) / dis);
-            // 返回小于数值的最大整数
+            // 返回小于数值的最大整数,为划线数
             var points = [];
             for (var j = 0; j < linenum; j++) {
                 // 求晕线与轮廓边的交点
